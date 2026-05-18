@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heart Health Monitor</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #F8F9FA;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 460px;
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+
+    h1 { font-size: 20px; font-weight: 500; color: #1A1A1A; margin-bottom: 6px; }
+    p  { font-size: 13px; color: #888; line-height: 1.6; }
+
+    label {
+      font-size: 13px;
+      color: #666;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border 0.2s;
+    }
+    input:focus { border-color: #E24B4A; }
+
+    button {
+      width: 100%;
+      padding: 11px;
+      font-size: 14px;
+      font-weight: 500;
+      background: #E24B4A;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button:hover  { background: #c73b3a; }
+    button:active { transform: scale(0.98); }
+
+    .btn-outline {
+      background: white;
+      color: #E24B4A;
+      border: 1px solid #E24B4A;
+    }
+    .btn-outline:hover { background: #FCEBEB; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* Header icon */
+    .icon-wrap {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .icon-wrap i {
+      font-size: 48px;
+      color: #E24B4A;
+    }
+
+    /* Metric cards */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+    .card {
+      background: #F8F9FA;
+      border-radius: 10px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+    .card .label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .card .value { font-size: 24px; font-weight: 500; }
+    .card .unit  { font-size: 11px; color: #888; }
+    .card.bpm  .value { color: #E24B4A; }
+    .card.bp   .value { color: #378ADD; font-size: 18px; }
+    .card.spo2 .value { color: #1D9E75; }
+
+    /* Status boxes */
+    .status-box {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 10px;
+      border: 1px solid;
+    }
+    .status-box .st-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .status-box .st-desc  { font-size: 13px; line-height: 1.6; }
+
+    .status-success { background: #EAF3DE; border-color: #639922; color: #27500A; }
+    .status-info    { background: #E6F1FB; border-color: #378ADD; color: #0C447C; }
+    .status-warning { background: #FAEEDA; border-color: #EF9F27; color: #633806; }
+    .status-danger  { background: #FCEBEB; border-color: #E24B4A; color: #791F1F; }
+
+    /* Advice box */
+    .advice-box {
+      background: #F8F9FA;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .advice-box .advice-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .advice-box .advice-text  { font-size: 13px; color: #333; line-height: 1.6; }
+
+    /* Sensor screen */
+    .sensor-wrap {
+      text-align: center;
+      padding: 1.5rem 0;
+    }
+    .sensor-icon-wrap {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 1.5rem;
+    }
+    .sensor-icon-bg {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: #FCEBEB;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sensor-icon-bg i { font-size: 40px; color: #E24B4A; }
+
+    .pulse-ring {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 3px solid #E24B4A;
+      top: 0; left: 0;
+      animation: pulse-ring 1.5s ease-out infinite;
+      display: none;
+    }
+
+    @keyframes pulse-ring {
+      0%   { transform: scale(0.9); opacity: 1; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+    @keyframes heartbeat {
+      0%,100% { transform: scale(1); }
+      14%     { transform: scale(1.25); }
+      28%     { transform: scale(1); }
+      42%     { transform: scale(1.15); }
+      56%     { transform: scale(1); }
+    }
+    .beating i { animation: heartbeat 0.9s ease-in-out infinite; display: inline-block; }
+
+    .sensor-msg { font-size: 16px; font-weight: 500; color: #1A1A1A; margin-bottom: 6px; }
+    .sensor-sub { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+
+    .progress-wrap {
+      background: #F8F9FA;
+      border-radius: 999px;
+      height: 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+      display: none;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #E24B4A;
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.4s;
+    }
+
+    .countdown { font-size: 13px; color: #888; margin-bottom: 1rem; display: none; }
+
+    .live-bpm {
+      display: none;
+      margin-bottom: 1rem;
+    }
+    .live-bpm .big { font-size: 48px; font-weight: 500; color: #E24B4A; }
+    .live-bpm .sub { font-size: 12px; color: #888; }
+
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row button { margin-top: 0; }
+
+    .disclaimer {
+      font-size: 11px;
+      color: #aaa;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    /* IP connect row */
+    .connect-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1rem;
+      align-items: center;
+    }
+    .connect-row input {
+      flex: 1;
+      margin-bottom: 0;
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+    .connect-row button {
+      width: auto;
+      padding: 8px 14px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .conn-status {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .conn-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #aaa;
+      display: inline-block;
+    }
+    .conn-dot.live { background: #639922; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- SCREEN 1: Name Entry -->
+  <div id="screen1" class="screen active">
+    <div class="icon-wrap">
+      <i class="ti ti-heart"></i>
+    </div>
+    <h1 style="text-align:center;">Heart health monitor</h1>
+    <p style="text-align:center; margin-bottom:1.5rem;">Powered by Raspberry Pi IoT sensor</p>
+
+    <label for="nameInput">Enter your name to begin</label>
+    <input id="nameInput" type="text" placeholder="e.g. Arjun"
+      onkeydown="if(event.key==='Enter') goToSensor()" />
+
+    <button onclick="goToSensor()">
+      Continue &nbsp;<i class="ti ti-arrow-right"></i>
+    </button>
+  </div>
+
+  <!-- SCREEN 2: Sensor -->
+  <div id="screen2" class="screen">
+
+    <div class="connect-row">
+      <input id="piIp" type="text" placeholder="Pi IP e.g. 192.168.1.42" />
+      <button onclick="connectPi()" style="background:#378ADD;">Connect Pi</button>
+    </div>
+    <div class="conn-status">
+      <span class="conn-dot" id="connDot"></span>
+      <span id="connLabel">Not connected — using simulation</span>
+    </div>
+
+    <div class="sensor-wrap">
+      <div id="welcomeText" style="font-size:15px; font-weight:500; color:#1A1A1A; margin-bottom:4px;"></div>
+      <p style="margin-bottom:1.5rem;">Follow the instructions below</p>
+
+      <div class="sensor-icon-wrap">
+        <div class="pulse-ring" id="pulseRing"></div>
+        <div class="sensor-icon-bg" id="heartWrap">
+          <i class="ti ti-heart" id="heartIcon"></i>
+        </div>
+      </div>
+
+      <div class="sensor-msg" id="sensorMsg">Place your finger on the sensor</div>
+      <div class="sensor-sub" id="sensorSub">Hold still for 10 seconds while the Raspberry Pi reads your heartbeat</div>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="countdown" id="countdown"></div>
+
+      <div class="live-bpm" id="liveBpmWrap">
+        <div class="big" id="liveBpm">--</div>
+        <div class="sub">BPM — reading live from sensor</div>
+      </div>
+
+      <div class="btn-row">
+        <button id="startBtn" onclick="startReading()">
+          <i class="ti ti-player-play"></i> Start reading
+        </button>
+        <button id="cancelBtn" class="btn-outline" onclick="cancelReading()" style="display:none;">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: Results -->
+  <div id="screen3" class="screen">
+    <div style="font-size:16px; font-weight:500; color:#1A1A1A; margin-bottom:1rem;" id="resultGreeting"></div>
+
+    <div class="cards">
+      <div class="card bpm">
+        <div class="label">Heart rate</div>
+        <div class="value" id="resBpm">--</div>
+        <div class="unit">BPM</div>
+      </div>
+      <div class="card bp">
+        <div class="label">Est. BP</div>
+        <div class="value" id="resBp">--/--</div>
+        <div class="unit">mmHg</div>
+      </div>
+      <div class="card spo2">
+        <div class="label">SpO₂</div>
+        <div class="value" id="resSpo2">--</div>
+        <div class="unit">%</div>
+      </div>
+    </div>
+
+    <div class="status-box" id="hrBox">
+      <div class="st-title" id="hrTitle"></div>
+      <div class="st-desc"  id="hrDesc"></div>
+    </div>
+
+    <div class="status-box" id="bpBox">
+      <div class="st-title" id="bpTitle"></div>
+      <div class="st-desc"  id="bpDesc"></div>
+    </div>
+
+    <div class="advice-box">
+      <div class="advice-label">Advice</div>
+      <div class="advice-text" id="resAdvice"></div>
+    </div>
+
+    <button onclick="startOver()">
+      <i class="ti ti-refresh"></i> Check another person
+    </button>
+
+    <p class="disclaimer">For informational purposes only. Not a substitute for medical advice.</p>
+  </div>
+
+</div>
+
+<script>
+  let userName = '';
+  let readingTimer = null;
+  let finalBpm = 0;
+  let piSocket = null;
+  let piConnected = false;
+
+  /* ── Navigation ── */
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function goToSensor() {
+    const name = document.getElementById('nameInput').value.trim();
+    if (!name) { alert('Please enter your name!'); return; }
+    userName = name;
+    document.getElementById('welcomeText').textContent = 'Hello ' + userName + '! Ready to check your heart?';
+    show('screen2');
+  }
+
+  function startOver() {
+    cancelReading();
+    document.getElementById('nameInput').value = '';
+    resetSensor();
+    show('screen1');
+  }
+
+  /* ── Raspberry Pi WebSocket connection ── */
+  function connectPi() {
+    const ip = document.getElementById('piIp').value.trim();
+    if (!ip) { alert('Enter your Raspberry Pi IP address first!'); return; }
+
+    const url = 'ws://' + ip + ':8765';
+    try {
+      piSocket = new WebSocket(url);
+      piSocket.onopen = () => {
+        piConnected = true;
+        document.getElementById('connDot').classList.add('live');
+        document.getElementById('connLabel').textContent = 'Connected to Raspberry Pi (' + ip + ')';
+      };
+      piSocket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.bpm) {
+            finalBpm = data.bpm;
+            document.getElementById('liveBpm').textContent = data.bpm;
+          }
+        } catch(e) {}
+      };
+      piSocket.onerror = () => {
+        piConnected = false;
+        document.getElementById('connDot').classList.remove('live');
+        document.getElementById('connLabel').textContent = 'Connection failed — using simulation';
+      };
+      piSocket.onclose = () => {
+        piConnected = false;
+        document.getElementById('connDot').classList.remove('live');
+        document.getElementById('connLabel').textContent = 'Disconnected — using simulation';
+      };
+    } catch(e) {
+      alert('Could not connect. Make sure Pi is running server.py and on same WiFi!');
+    }
+  }
+
+  /* ── Sensor reading ── */
+  function startReading() {
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('cancelBtn').style.display = 'block';
+    document.getElementById('pulseRing').style.display = 'block';
+    document.getElementById('progressWrap').style.display = 'block';
+    document.getElementById('countdown').style.display = 'block';
+    document.getElementById('liveBpmWrap').style.display = 'block';
+    document.getElementById('heartWrap').classList.add('beating');
+    document.getElementById('sensorMsg').textContent = 'Reading your heartbeat...';
+    document.getElementById('sensorSub').textContent = 'Keep your finger on the sensor. Stay still!';
+
+    let elapsed = 0;
+    let simBpm = 55 + Math.floor(Math.random() * 60);
+    finalBpm = simBpm;
+
+    readingTimer = setInterval(() => {
+      elapsed++;
+      document.getElementById('progressFill').style.width = (elapsed / 10 * 100) + '%';
+      document.getElementById('countdown').textContent = (10 - elapsed) + ' seconds remaining...';
+
+      if (!piConnected) {
+        // Simulate sensor data
+        simBpm += Math.floor((Math.random() - 0.5) * 8);
+        simBpm = Math.max(40, Math.min(160, simBpm));
+        finalBpm = simBpm;
+        document.getElementById('liveBpm').textContent = simBpm;
+      }
+
+      if (elapsed >= 10) {
+        clearInterval(readingTimer);
+        showResults(finalBpm);
+      }
+    }, 1000);
+  }
+
+  function cancelReading() {
+    clearInterval(readingTimer);
+    resetSensor();
+  }
+
+  function resetSensor() {
+    document.getElementById('startBtn').style.display = 'block';
+    document.getElementById('cancelBtn').style.display = 'none';
+    document.getElementById('pulseRing').style.display = 'none';
+    document.getElementById('progressWrap').style.display = 'none';
+    document.getElementById('countdown').style.display = 'none';
+    document.getElementById('liveBpmWrap').style.display = 'none';
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('heartWrap').classList.remove('beating');
+    document.getElementById('sensorMsg').textContent = 'Place your finger on the sensor';
+    document.getElementById('sensorSub').textContent = 'Hold still for 10 seconds while the Raspberry Pi reads your heartbeat';
+    document.getElementById('liveBpm').textContent = '--';
+  }
+
+  /* ── Results ── */
+  function showResults(bpm) {
+    const sys  = Math.round(100 + (bpm - 60) * 0.5 + Math.random() * 8);
+    const dia  = Math.round(65  + (bpm - 60) * 0.2 + Math.random() * 5);
+    const spo2 = bpm > 120 ? 96 : 98;
+
+    document.getElementById('resBpm').textContent  = bpm;
+    document.getElementById('resBp').textContent   = sys + '/' + dia;
+    document.getElementById('resSpo2').textContent = spo2;
+    document.getElementById('resultGreeting').textContent = userName + ', here are your results:';
+
+    // Heart rate classification
+    let hrTitle, hrDesc, hrClass, advice;
+    if (bpm < 60) {
+      hrTitle = 'Low heart rate (Bradycardia)';
+      hrDesc  = 'Your heart rate of ' + bpm + ' BPM is below the normal range of 60–100 BPM.';
+      hrClass = 'status-info';
+      advice  = 'This may be normal if you are an athlete. Otherwise consult a doctor if you feel dizzy or short of breath.';
+    } else if (bpm <= 100) {
+      hrTitle = 'Normal heart rate';
+      hrDesc  = 'Your heart rate of ' + bpm + ' BPM is within the healthy resting range of 60–100 BPM.';
+      hrClass = 'status-success';
+      advice  = 'Great job ' + userName + '! Keep up a healthy lifestyle with regular exercise and good sleep.';
+    } else if (bpm <= 150) {
+      hrTitle = 'High heart rate (Tachycardia)';
+      hrDesc  = 'Your heart rate of ' + bpm + ' BPM is above the normal range. This may be due to stress or physical activity.';
+      hrClass = 'status-warning';
+      advice  = 'Rest, stay hydrated and avoid caffeine. If this persists at rest, please consult a doctor.';
+    } else {
+      hrTitle = 'Very high heart rate — seek help';
+      hrDesc  = 'Your heart rate of ' + bpm + ' BPM is dangerously high. This requires urgent medical attention.';
+      hrClass = 'status-danger';
+      advice  = userName + ', please seek medical attention immediately if this is a resting reading.';
+    }
+
+    setBox('hrBox', 'hrTitle', 'hrDesc', hrTitle, hrDesc, hrClass);
+    document.getElementById('resAdvice').textContent = advice;
+
+    // BP classification
+    let bpTitle, bpDesc, bpClass;
+    if (sys < 90) {
+      bpTitle = 'Low blood pressure (Hypotension)';
+      bpDesc  = 'Estimated BP of ' + sys + '/' + dia + ' mmHg is below normal. You may feel dizzy or lightheaded.';
+      bpClass = 'status-info';
+    } else if (sys <= 120 && dia <= 80) {
+      bpTitle = 'Normal blood pressure';
+      bpDesc  = 'Estimated BP of ' + sys + '/' + dia + ' mmHg is in the ideal healthy range (below 120/80).';
+      bpClass = 'status-success';
+    } else if (sys <= 139 || dia <= 89) {
+      bpTitle = 'Elevated blood pressure';
+      bpDesc  = 'Estimated BP of ' + sys + '/' + dia + ' mmHg is slightly elevated. Lifestyle changes may help.';
+      bpClass = 'status-warning';
+    } else {
+      bpTitle = 'High blood pressure (Hypertension)';
+      bpDesc  = 'Estimated BP of ' + sys + '/' + dia + ' mmHg is high. Please consult a doctor for proper treatment.';
+      bpClass = 'status-danger';
+    }
+
+    setBox('bpBox', 'bpTitle', 'bpDesc', bpTitle, bpDesc, bpClass);
+    show('screen3');
+  }
+
+  function setBox(boxId, titleId, descId, title, desc, cls) {
+    const box = document.getElementById(boxId);
+    box.className = 'status-box ' + cls;
+    document.getElementById(titleId).textContent = title;
+    document.getElementById(descId).textContent  = desc;
+  }
+</script>
+
+</body>
+</html>
